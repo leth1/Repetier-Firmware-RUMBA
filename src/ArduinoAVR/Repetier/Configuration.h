@@ -80,7 +80,9 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 // Unique One rev. A          = 88
 // User layout defined in userpins.h = 999
 
-#define MOTHERBOARD 33
+#define MOTHERBOARD 80
+#define RUMBA_PWM 1
+#define FAN_BOARD_PIN FAN1_PIN
 
 #include "pins.h"
 
@@ -532,9 +534,16 @@ Value is used for all generic tables created. */
 // ############# Heated bed configuration ########################
 
 /** \brief Set true if you have a heated bed conected to your board, false if not */
-#define HAVE_HEATED_BED 1
+#define HAVE_HEATED_BED true
 
-#define HEATED_BED_MAX_TEMP 115
+// so I have a cool 280W 230V/50Hz heater hooked up to PS_ON via a solid-state relay; I'd rather the other stuff happening to that pin go away
+// SSR runs on timer5 and is frequency-synchronized with the AC line frequency for maximum accuracy
+
+#define PS_ON_PIN          -1
+#define HEATED_BED_SSR_PIN 45
+#define HEATED_BED_SSRFREQ 100 // switchable once every zero-crossing
+
+#define HEATED_BED_MAX_TEMP 120
 /** Skip M190 wait, if heated bed is already within x degrees. Fixed numbers only, 0 = off. */
 #define SKIP_M190_IF_WITHIN 3
 
@@ -544,7 +553,7 @@ Value is used for all generic tables created. */
 /** Analog pin of analog sensor to read temperature of heated bed.  */
 #define HEATED_BED_SENSOR_PIN TEMP_1_PIN
 /** \brief Pin to enable heater for bed. */
-#define HEATED_BED_HEATER_PIN HEATER_1_PIN
+#define HEATED_BED_HEATER_PIN HEATED_BED_SSR_PIN
 // How often the temperature of the heated bed is set (msec)
 #define HEATED_BED_SET_INTERVAL 5000
 

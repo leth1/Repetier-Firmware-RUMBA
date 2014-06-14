@@ -603,30 +603,44 @@ STEPPER_CURRENT_CONTROL
 #define ORIG_E2_DIR_PIN         28
 #define ORIG_E2_ENABLE_PIN      39
 
-#define LED_PIN            13
+#define LED_PIN                 13
 
 #define ORIG_FAN_PIN            7
-#define FAN1 PIN  8 // (e.g. useful for electronics fan or light on/off) on PIN 8
+//misc stupidity workaround (FAN0 on the board is FAN1 on the MCU and v.v.)
+#define FAN_PIN                 7 // FAN0 on the PCB
+#define FAN0_PIN                7 // FAN0 on the PCB
+#define FAN1_PIN                8 // FAN1 on the PCB
+#define FAN2_PIN                8 // FAN1 on the PCB
 
 #define PS_ON_PIN          45
 
 #define HEATER_0_PIN       2    // EXTRUDER 1
+#define HEATER_1_PIN       9    // BED
 #define HEATER_2_PIN       3    // EXTRUDER 2
 #define HEATER_3_PIN       6    // EXTRUDER 3
-//optional FAN1 can be used as 4th heater output: #define HEATER_4_PIN       8    // EXTRUDER 4
-#define HEATER_1_PIN       9    // BED
 
+#if 0
+// this is the top-to-bottom order used on the board
+#define TEMP_0_PIN         15   // ANALOG NUMBERING
+#define TEMP_1_PIN         14   // ANALOG NUMBERING
+#define TEMP_2_PIN         13   // ANALOG NUMBERING
+#define TEMP_3_PIN         12   // ANALOG NUMBERING
+#define TEMP_4_PIN         11   // ANALOG NUMBERING
+#else
+// this is the legacy order which is that way because !?
 #define TEMP_0_PIN         15   // ANALOG NUMBERING
 #define TEMP_2_PIN         14   // ANALOG NUMBERING
 #define TEMP_3_PIN         13   // ANALOG NUMBERING
-//optional for extruder 4 or chamber: #define TEMP_2_PIN         12   // ANALOG NUMBERING
-#define TEMP_1_PIN       11   // ANALOG NUMBERING
+#define TEMP_4_PIN         12   // ANALOG NUMBERING
+#define TEMP_1_PIN         11   // ANALOG NUMBERING
+#endif
 
 #define SDPOWER            -1
+#define SDCARDDETECT       49
 #define SDSS               53
-#define SCK_PIN          52
-#define MISO_PIN         50
-#define MOSI_PIN         51
+#define SCK_PIN            52
+#define MISO_PIN           50
+#define MOSI_PIN           51
 
 #define E0_PINS ORIG_E0_STEP_PIN,ORIG_E0_DIR_PIN,ORIG_E0_ENABLE_PIN,
 #define E1_PINS ORIG_E1_STEP_PIN,ORIG_E1_DIR_PIN,ORIG_E1_ENABLE_PIN,

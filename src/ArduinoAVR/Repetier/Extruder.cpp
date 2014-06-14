@@ -307,9 +307,14 @@ void Extruder::initExtruder()
         }
 #endif
     }
-#if HEATED_BED_HEATER_PIN>-1
+#if defined(HEATED_BED_SSR_PIN) && HEATED_BED_SSR_PIN>-1
+    SET_OUTPUT(HEATED_BED_SSR_PIN);
+    WRITE(HEATED_BED_SSR_PIN,0);
+#elif HEATED_BED_HEATER_PIN>-1
     SET_OUTPUT(HEATED_BED_HEATER_PIN);
     WRITE(HEATED_BED_HEATER_PIN,HEATER_PINS_INVERTED);
+#endif
+#if HAVE_HEATED_BED
     Extruder::initHeatedBed();
 #endif
     HAL::analogStart();

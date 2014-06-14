@@ -274,6 +274,64 @@ void HAL::setupTimer()
     TIMSK3 =  _BV(OCIE3A) ; // enable the output compare interrupt
 #endif
 #endif
+
+#if defined(RUMBA_PWM) // RUMBA
+	// hardware PWM setup on timer 3, 4 & 5
+#if !FEATURE_SERVO
+    SET_OUTPUT(2);  // HE 0  (OCR3B)
+    SET_OUTPUT(3);  // HE 1  (OCR3C)
+    SET_OUTPUT(5);  // PWM 2 (OCR3A)
+
+    TCCR3B  = 0;
+    TIFR3   = 0;
+    TCNT3   = 0;
+    TIMSK3  = 0;
+    ICR3    = 255; // 62500 PWM cycles / s
+    OCR3A   = 0;
+    OCR3B   = 0;
+    OCR3C   = 0;
+    // fast PWM
+    TCCR3A  = _BV(WGM31) | _BV(COM3A1) | _BV(COM3B1) | _BV(COM3C1);
+    TCCR3B  = _BV(WGM33) | _BV(WGM32) |  _BV(CS30);
+    // phase/frequency PWM
+    //    TCCR3A  = _BV(COM4A1) | _BV(COM4B1) | _BV(COM4C1);
+    //    TCCR3B  = _BV(WGM43) | _BV(CS40);
+#endif
+
+    SET_OUTPUT(6);  // HE 2  (OCR4A)
+    SET_OUTPUT(7);  // FAN 0 (OCR4B)
+    SET_OUTPUT(8);  // FAN 1 (OCR4C)
+
+    TCCR4B  = 0;
+    TIFR4   = 0;
+    TCNT4   = 0;
+    TIMSK4  = 0;
+    ICR4    = 255; // 62500 PWM cycles / s
+    OCR4A   = 0;
+    OCR4B   = 0;
+    OCR4C   = 0;
+    // fast PWM
+    TCCR4A  = _BV(WGM41) | _BV(COM4A1) | _BV(COM4B1) | _BV(COM4C1);
+    TCCR4B  = _BV(WGM43) | _BV(WGM42) | _BV(CS40);
+    // phase/frequency PWM
+    //    TCCR4A  = _BV(COM4A1) | _BV(COM4B1) | _BV(COM4C1);
+    //    TCCR4B  = _BV(WGM43) | _BV(CS40);
+
+#endif
+#ifdef __AVR_ATmega2560__ && HAVE_HEATED_BED && defined(HEATED_BED_SSR_PIN) && HEATED_BED_SSRFREQ>-1
+    // let's use timer 5 to run the SSR
+    TCCR5B  = 0;
+    TIFR5   = 0;
+    TCNT5   = 0;
+    TIMSK5  = _BV(OCIE5B);
+    ICR5    = F_CPU/8/HEATED_BED_SSRFREQ-1;
+    OCR5A   = 0;
+    OCR5B   = ICR5;
+    OCR5C   = 0;
+    // 1/8 prescaler, CTC from ICR
+    TCCR5A  = _BV(COM5B1);
+    TCCR5B  = _BV(WGM53) | _BV(WGM52) | _BV(CS51);
+#endif
 }
 
 void HAL::showStartReason()
@@ -734,24 +792,57 @@ ISR(PDM_TIMER_VECTOR)
     PDM_OCR += 64;
 
 #if defined(EXT0_HEATER_PIN) && EXT0_HEATER_PIN>-1 && NUM_EXTRUDER>0
+    #if defined(RUMBA_PWM) && !FEATURE_SERVO && EXT0_HEATER_PIN==2 // RUMBA
+        OCR3B = pdm_target[0];
+        #if EXT0_EXTRUDER_COOLER_PIN==7
+            OCR4B = extruder[0].coolerPDM;
+        #elif EXT0_EXTRUDER_COOLER_PIN==8
+            OCR4C = extruder[0].coolerPDM;
+        #elif EXT0_EXTRUDER_COOLER_PIN>-1
+            HAL::pulseDensityModulate(EXT0_EXTRUDER_COOLER_PIN, extruder[0].coolerPDM, &pdm_error_cooler[0]);
+        #endif
+    #else
         HAL::pulseDensityModulate(EXT0_HEATER_PIN, pdm_target[0], &pdm_error[0], HEATER_PINS_INVERTED);
         #if EXT0_EXTRUDER_COOLER_PIN>-1
             HAL::pulseDensityModulate(EXT0_EXTRUDER_COOLER_PIN, extruder[0].coolerPDM, &pdm_error_cooler[0]);
         #endif
+    #endif
 #endif
 
 #if defined(EXT1_HEATER_PIN) && EXT1_HEATER_PIN>-1 && NUM_EXTRUDER>1
+    #if defined(RUMBA_PWM) && !FEATURE_SERVO && EXT1_HEATER_PIN==3 // RUMBA
+        OCR3C = pdm_target[1];
+        #if EXT1_EXTRUDER_COOLER_PIN==7
+            OCR4B = extruder[1].coolerPDM;
+        #elif EXT1_EXTRUDER_COOLER_PIN==8
+            OCR4C = extruder[1].coolerPDM;
+        #elif EXT1_EXTRUDER_COOLER_PIN>-1
+            HAL::pulseDensityModulate(EXT1_EXTRUDER_COOLER_PIN, extruder[1].coolerPDM, &pdm_error_cooler[1]);
+        #endif
+    #else
         HAL::pulseDensityModulate(EXT1_HEATER_PIN, pdm_target[1], &pdm_error[1], HEATER_PINS_INVERTED);
         #if EXT1_EXTRUDER_COOLER_PIN>-1
             HAL::pulseDensityModulate(EXT1_EXTRUDER_COOLER_PIN, extruder[1].coolerPDM, &pdm_error_cooler[1]);
         #endif
+    #endif
 #endif
 
 #if defined(EXT2_HEATER_PIN) && EXT2_HEATER_PIN>-1 && NUM_EXTRUDER>2
+    #if defined(RUMBA_PWM) && EXT2_HEATER_PIN==6 // RUMBA
+        OCR4A = pdm_target[2];
+        #if EXT2_EXTRUDER_COOLER_PIN==7
+            OCR4B = extruder[2].coolerPDM;
+        #elif EXT2_EXTRUDER_COOLER_PIN==8
+            OCR4C = extruder[2].coolerPDM;
+        #elif EXT2_EXTRUDER_COOLER_PIN>-1
+           HAL::pulseDensityModulate(EXT2_EXTRUDER_COOLER_PIN, extruder[2].coolerPDM, &pdm_error_cooler[2]);
+        #endif
+    #else
        HAL::pulseDensityModulate(EXT2_HEATER_PIN, pdm_target[2], &pdm_error[2], HEATER_PINS_INVERTED);
         #if EXT2_EXTRUDER_COOLER_PIN>-1
            HAL::pulseDensityModulate(EXT2_EXTRUDER_COOLER_PIN, extruder[2].coolerPDM, &pdm_error_cooler[2]);
         #endif
+    #endif
 #endif
 
 #if defined(EXT3_HEATER_PIN) && EXT3_HEATER_PIN>-1 && NUM_EXTRUDER>3
@@ -775,7 +866,7 @@ ISR(PDM_TIMER_VECTOR)
         #endif
 #endif
 
-#if HEATED_BED_HEATER_PIN>-1 && HAVE_HEATED_BED
+#if HEATED_BED_HEATER_PIN>-1 && HAVE_HEATED_BED && !defined(HEATED_BED_SSR_PIN)
        HAL::pulseDensityModulate(HEATED_BED_HEATER_PIN, pdm_target[NUM_EXTRUDER], &pdm_error[NUM_EXTRUDER], HEATER_PINS_INVERTED);
 #endif
 
@@ -784,11 +875,23 @@ ISR(PDM_TIMER_VECTOR)
 #endif
 
 #if FAN_BOARD_PIN>-1
+    #if   defined(RUMBA_PWM) && FAN_BOARD_PIN==7 // RUMBA
+        OCR4B = pdm_target[NUM_EXTRUDER+1];
+    #elif defined(RUMBA_PWM) && FAN_BOARD_PIN==8 // RUMBA
+        OCR4C = pdm_target[NUM_EXTRUDER+1];
+    #else
        HAL::pulseDensityModulate(FAN_BOARD_PIN, pdm_target[NUM_EXTRUDER+1], &pdm_error_fan[0]);
+    #endif
 #endif
 
 #if FAN_PIN>-1 && FEATURE_FAN_CONTROL
+    #if   defined(RUMBA_PWM) && FAN_PIN==7 // RUMBA
+        OCR4B = pdm_target[NUM_EXTRUDER+2];
+    #elif defined(RUMBA_PWM) && FAN_PIN==8 // RUMBA
+        OCR4C = pdm_target[NUM_EXTRUDER+2];
+    #else
        HAL::pulseDensityModulate(FAN_PIN, pdm_target[NUM_EXTRUDER+2], &pdm_error_fan[1]);
+    #endif
 #endif
 
     HAL::allowInterrupts();
@@ -838,6 +941,16 @@ ISR(PDM_TIMER_VECTOR)
 
     UI_FAST; // Short timed user interface action
 }
+
+#ifdef __AVR_ATmega2560__
+ISR(TIMER5_COMPB_vect){
+#if defined(HEATED_BED_SSR_PIN) && HEATED_BED_SSR_PIN>-1 && HAVE_HEATED_BED
+    static uint8_t heated_bed_pdm_error;
+    HAL::pulseDensityModulate(HEATED_BED_SSR_PIN, pdm_target[NUM_EXTRUDER], &heated_bed_pdm_error, HEATER_PINS_INVERTED);
+#endif
+}
+#endif
+
 #if defined(USE_ADVANCE)
 
 /** \brief Timer routine for extruder stepper.

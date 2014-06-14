@@ -1705,6 +1705,9 @@ void Commands::emergencyStop()
 #if HEATED_BED_HEATER_PIN>-1
     WRITE(HEATED_BED_HEATER_PIN,HEATER_PINS_INVERTED);
 #endif
+#if HEATED_BED_SSR_PIN>-1
+    WRITE(HEATED_BED_SSR_PIN,0);
+#endif
     while(1) {}
     END_INTERRUPT_PROTECTED
 #endif
